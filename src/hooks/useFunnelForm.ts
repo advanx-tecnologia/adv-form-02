@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { trackEvent } from '@/lib/tracking';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface FunnelFormData {
   // Página 2 - Contato
@@ -19,6 +20,16 @@ export interface FunnelFormData {
   stateCode: string;
 }
 
+export interface AIDiagnostic {
+  nicho_identificado: string;
+  problema_principal: string;
+  potencial_contratos: string;
+  investimento_sugerido: string;
+  economia_potencial: string;
+  insights: string[];
+  mensagem_personalizada: string;
+}
+
 const initialFormData: FunnelFormData = {
   fullName: '',
   email: '',
@@ -36,6 +47,7 @@ export function useFunnelForm() {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FunnelFormData>(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [aiDiagnostic, setAiDiagnostic] = useState<AIDiagnostic | null>(null);
 
   const totalSteps = 6;
   const progress = ((currentStep - 1) / (totalSteps - 1)) * 100;
@@ -75,11 +87,26 @@ export function useFunnelForm() {
       state: formData.state,
     });
 
-    // Aqui será integrado com Supabase
-    console.log('Form submitted:', formData);
-    
-    // Simula delay de envio
-    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+      // Chamar edge function para gerar diagnóstico com IA
+      const { data, error } = await supabase.functions.invoke('generate-diagnostic', {
+        body: {
+          fullName: formData.fullName,
+          city: formData.city,
+          businessStructure: formData.businessStructure,
+          revenue: formData.revenue,
+        }
+      });
+
+      if (error) {
+        console.error('Error calling AI:', error);
+      } else if (data?.diagnostic) {
+        setAiDiagnostic(data.diagnostic);
+        console.log('AI Diagnostic received:', data.diagnostic);
+      }
+    } catch (err) {
+      console.error('Failed to get AI diagnostic:', err);
+    }
     
     setIsSubmitting(false);
     nextStep();
@@ -95,6 +122,7 @@ export function useFunnelForm() {
     progress,
     formData,
     isSubmitting,
+    aiDiagnostic,
     updateFormData,
     nextStep,
     prevStep,
