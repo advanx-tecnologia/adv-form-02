@@ -16,6 +16,7 @@ export function FunnelForm() {
     progress,
     formData,
     isSubmitting,
+    aiDiagnostic,
     updateFormData,
     nextStep,
     submitForm,
@@ -71,6 +72,7 @@ export function FunnelForm() {
           <Step6Diagnostic
             formData={formData}
             firstName={getFirstName()}
+            aiDiagnostic={aiDiagnostic}
           />
         );
       default:
